@@ -75,9 +75,9 @@ resource "aws_route_table_association" "public_b" {
 
 
 
-resource "aws_subnet" "app-private_a" {
+resource "aws_subnet" "app_private_a" {
     vpc_id = aws_vpc.main.id
-    cidr_block = var.app-private_subnet_cidrs[0]
+    cidr_block = var.app_private_subnet_cidrs[0]
     availability_zone = "us-east-1a"
   
 
@@ -87,9 +87,9 @@ resource "aws_subnet" "app-private_a" {
     }
 }
 
-resource "aws_subnet" "app-private_b" {
+resource "aws_subnet" "app_private_b" {
     vpc_id = aws_vpc.main.id
-    cidr_block = var.app-private_subnet_cidrs[1]
+    cidr_block = var.app_private_subnet_cidrs[1]
     availability_zone = "us-east-1b"
   
 
@@ -99,9 +99,9 @@ resource "aws_subnet" "app-private_b" {
     }
 }
 
-resource "aws_subnet" "db-private_a" {
+resource "aws_subnet" "db_private_a" {
     vpc_id = aws_vpc.main.id
-    cidr_block = var.db-private_subnet_cidrs[0]
+    cidr_block = var.db_private_subnet_cidrs[0]
     availability_zone = "us-east-1a"
   
 
@@ -111,9 +111,9 @@ resource "aws_subnet" "db-private_a" {
     }
 }
 
-resource "aws_subnet" "db-private_b" {
+resource "aws_subnet" "db_private_b" {
     vpc_id = aws_vpc.main.id
-    cidr_block = var.db-private_subnet_cidrs[1]
+    cidr_block = var.db_private_subnet_cidrs[1]
     availability_zone = "us-east-1b"
   
 
@@ -121,4 +121,46 @@ resource "aws_subnet" "db-private_b" {
         Name = "vaultpay-db-private-subnet-b"
         Project = "Vaultpay"
     }
+}
+
+resource "aws_eip" "nat" {
+    domain = "vpc"
+    tags = {
+        Name = "vaultpay-nat-eip"
+        Project = "Vaultpay"
+
+  }
+}
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_a.id
+
+  tags = {
+        Name = "vaultpay-nat-gw"
+        Project = "Vaultpay"
+
+  }
+  depends_on = [aws_internet_gateway.main]
+}
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = {
+        Name = "vaultpay-private-rt"
+        Project = "Vaultpay"
+    }
+}
+
+resource "aws_route_table_association" "app_private_a" {
+  subnet_id      = aws_subnet.app_private_a.id
+  route_table_id = aws_route_table.private.id
+}
+resource "aws_route_table_association" "app_private_b" {
+  subnet_id      = aws_subnet.app_private_b.id
+  route_table_id = aws_route_table.private.id
 }
