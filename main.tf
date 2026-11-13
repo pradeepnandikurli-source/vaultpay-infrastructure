@@ -94,7 +94,7 @@ resource "aws_subnet" "app-private_b" {
   
 
     tags = {
-        Name = "vaultpay-app-private-subnet-a"
+        Name = "vaultpay-app-private-subnet-b"
         Project = "Vaultpay"
     }
 }
